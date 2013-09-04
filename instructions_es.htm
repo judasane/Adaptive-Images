@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    
+    <style>
+      body {
+        width : 90%; margin : 1em auto;
+        background : #333; color : #aaa; font : 100%/1.5 "Helvetica Neue", Helvetica, Arial, sans-serif; }
+      h1, h2, h3, h4, h5, h6 {
+        color : #fff; }
+      p code { color : #99e; }
+      pre > code { display : block; padding : 1em; border : 1px solid #999; }
+      :target { background-color : #000;}
+      
+      a,a:visited{ color : #99f; }
+    </style>
+    <title>Instrucciones</title>
+  </head>
+
+  <body>
+    <h1>Instrucciones de uso para Adaptive-Images</h1>
+    <h2>Instrucciones Básicas</h2>
+    <p>Copie <code>adaptive-images.php</code> y <code>.htaccess</code> en el directorio raíz de su sitio. Si usted ya tiene un archivo htaccess NO LO SOBREESCRIBA, lea abajo en las intrucciones avanzadas.</p>
+    <p>Copie el siguiente código Javascript en el &lt;head&gt; de su sitio. DEBE IR en el head, como el primer código javascript, antes de cualquier otro. Esto es porque es necesario que funcione tan pronto como sea posible, cualquier retraso traería efectos adversos.</p>
+<pre><code>&lt;script&gt;document.cookie='resolution='+Math.max(screen.width,screen.height)+'; path=/';&lt;/script&gt;</code></pre>
+    <p>Eso es todo, ha acabado. Aunque probablemente debería <a href="#config">configurar algunas preferencias</a>.</p>
+    <p>NOTA 1: si quiere tomar ventaja de dispositivos de alta densidad de píxeles como el iPhone4 o el iPad3 Retina display, puede usar el siguiente código en lugar del ya mencionado.
+       Esto va a enviar imágenes de mayor resolución a estos dispositivos - no olvide que esto significa descargas más lentas para los usuarios de estos dispositivos, pero mejores imágenes.</p>
+    <pre><code>&lt;script&gt;document.cookie='resolution='+Math.max(screen.width,screen.height)+("devicePixelRatio" in window ? ","+devicePixelRatio : ",1")+'; path=/';&lt;/script&gt;</code></pre>
+    <p>NOTA 2: no necesita el archivo <code>ai-cookie.php</code>, a menos que esté usando el <a href="#alternate">método alternativo</a> para detectar el tamaño de la pantalla del usuario. Así que puede eliminarlo si quiere, a nadie le gusta el desorden.</p>
+    <p>NOTA 3: Si usted es extra paranóico acerca de la seguridad, puede mantener la carpeta ai-cache fuera del directorio raíz de su sitio, así no será accesible públicamente. Sólo tenga cuidado de ajustar las rutas correctas en los archivos .htaccess y .php .</p>
+    
+    <h2>Si ya tiene un archivo .htaccess</h2>
+    <p>Le recomiendo fuertemente duplicar ese archivo, así podría revertir las cosas si algo sale mal.</p>
+    <p>Abra su archivo .htaccess ya existentey edite su contenido. Va a necesitar mirar si contiene una sección que inicie con lo siguiente:</p>
+    <p><code>&lt;IfModule mod_rewrite.c&gt;</code></p>
+    <p>Si la hay, entonces necesita agregar las siguientes líneas a ese bloque:</p>
+    
+<pre><code># Adaptive-Images -----------------------------------------------------------------------------------
+
+# Agregue las carpetas que usted prefiera omitir del proceso de Adaptive-Images en una nueva linea, de esta manera::
+# RewriteCond %{REQUEST_URI} !una-carpeta
+# RewriteCond %{REQUEST_URI} !otra-carpeta
+
+RewriteCond %{REQUEST_URI} !assets
+
+# Envíe cualquier petición de archivos GIF, JPG, o PNG que NO ESTÉ guardada dentro de uno de los directorios anteriores
+# a adaptive-images.php, así podremos seleccionar apropiadamente versiones redimensionadas
+RewriteRule \.(?:jpe?g|gif|png)$ adaptive-images.php
+
+# FIN Adaptive-Images -------------------------------------------------------------------------------</code></pre>
+
+<p>Si usted no tiene un bloque de código, entonces simplemente copie y pegue lo siguiente en su archivo:</p>
+
+<pre><code>&lt;IfModule mod_rewrite.c&gt;
+  Options +FollowSymlinks
+  RewriteEngine On
+
+  # Adaptive-Images -----------------------------------------------------------------------------------
+
+  # Agregue las carpetas que usted prefiera omitir del proceso de Adaptive-Images en una nueva linea, de esta manera::
+  # RewriteCond %{REQUEST_URI} !some-directory
+  # RewriteCond %{REQUEST_URI} !another-directory
+
+  RewriteCond %{REQUEST_URI} !assets
+
+  # Envíe cualquier petición de archivos GIF, JPG, o PNG que NO ESTÉ guardada dentro de uno de los directorios anteriores
+  # a adaptive-images.php, así podremos seleccionar apropiadamente versiones redimensionadas
+  RewriteRule \.(?:jpe?g|gif|png)$ adaptive-images.php
+
+  # FIN Adaptive-Images -------------------------------------------------------------------------------
+&lt;/IfModule&gt;</code></pre>
+
+    <h2 id="config">Ajustes adicionales y configuración</h2>
+    <h3>.htaccess</h3>
+    <p>Las instrucciones están en el archivo como comentarios (Cualquier línea que inicie con un # es un comentario, y realmente no hace nada)</p>
+    <p>Siga las instrucciones dentro de ese código para especificar cualquier carpeta con la que no quiera usar Adaptive-Images.</p>
+    
+    <h3>PHP</h3>
+    <p>Usted puede ahora abrir el archivo php y jugar con los ajustes que están en el area CONFIG. por defecto, luce así:</p>
+      
+<pre><code>/* CONFIG ----------------------------------------------------------------------------------------------------------- */
+
+$resolutions   = array(1382, 992, 768, 480); // the resolution break-points to use (screen widths, in pixels)
+$cache_path    = "ai-cache"; // where to store the generated re-sized images. Specify from your document root!
+$jpg_quality   = 80; // the quality of any generated JPGs on a scale of 0 to 100
+$sharpen       = TRUE; // Shrinking images can blur details, perform a sharpen on re-scaled images?
+$watch_cache   = TRUE; // check that the adapted image isn't stale (ensures updated source images are re-cached)
+$browser_cache = 60*60*24*7; // How long the BROWSER cache should last (seconds, minutes, hours, days. 7days by default)
+
+/* END CONFIG ----------------------------------------------------------------------------------------------------------
+------------------------ Don't edit anything after this line unless you know what you're doing -------------------------
+--------------------------------------------------------------------------------------------------------------------- */</code></pre>
+  <p><code>$resolutions</code> are the screen widths we'll work with. In the default it will store a re-sized image for large screens, normal screens, tablets, phones, and tiny phones.</p>
+  <p>In general, if you're using a responsive design in CSS, these breakpoints will be exactly the same as the ones you use in your media queries.</p>
+  <p><code>$cache_path</code> If you don't like the cached images being written to that folder, you can put it somewhere else. Just put the path to the folder here and make sure you create it on the server if for some reason that couldn't be done autmoatically by adaptive-images.php.</p>
+  <p><code>$sharpen</code> Will perform a subtle sharpening on the rescaled images. Usually this is fine, but you may want to turn it off if your server is very very busy.</p>
+  <p><code>$watch_cache</code> If your server gets very busy it may help performance to turn this to FALSE. It will mean however that you will have to manually clear out the cache directory if you change a resource file</p>
+  
+<h2 id="alternate">Alternate method for those who can't rely on JavaScript</h2>
+
+<p>One of the weaknesses of the Adaptive Images process is its reliance on JavaScript to detect the visitors screen size, and set a cookie with that screen size inside it. The following is a solution for people who need the system to work without the use of JavaScript, but it does have a major caveat which is why this is not the default method, and why it is "unsupported" (I'm not going to troubleshoot problems you have with this method).</p>
+
+<h3>The alternative method</h3>
+<p>Do not use the JavaScript as explained above, but instead, ABOVE your normal CSS, add the following into the head:</p>
+<pre><code>&lt;style&gt;
+ @media only screen and (max-device-width: 479px) {
+   html { background-image:url(ai-cookie.php?maxwidth=479); } }
+ @media only screen and (min-device-width: 480px) and (max-device-width: 767px) {
+   html { background-image:url(ai-cookie.php?maxwidth=767); } }
+ @media only screen and (min-device-width: 768px) and (max-device-width: 991px) {
+   html { background-image:url(ai-cookie.php?maxwidth=991); } }
+ @media only screen and (min-device-width: 992px) and (max-device-width: 1381px) {
+   html { background-image:url(ai-cookie.php?maxwidth=1381); } }
+ @media only screen and (min-device-width: 1382px) {
+   html { background-image:url(ai-cookie.php?maxwidth=unknown); } }
+&lt;/style&gt;</code></pre>
+<p>If you use this method you will need to ensure the widths here match those in your adaptive-images.php file, you will also need to have the <code>ai-cookie.php</code> file in the root of your website (no one else needs this file).</p>
+
+<h3>The caveat</h3>
+<p>Using this method instead of the JS method makes it likely that on the very first visit to your site, the images sent to the visitor will be the original full-scale versions. However, ALL subsequent pages on your site will work properly. What that means is that, really, this solution is only viable if you've got $mobile_first set to FALSE. Otherwise, the majority of people who visit your site will experience images too small for their computer on the very first visit.</p>
+<p>The reason is to do with how browsers load web pages. The first thing a browser does is load the HTML, in the order it's written - so for a normal AI install it loads the HTML and see's the embeded JavaScript and immediately executes that JavaScript - which writes the cookie. It then carries on loading the rest of the page in the order it finds it. Long story short - it means that when it finds an image tag and asks the server for it, it already has a cookie stored.</p>
+<p>That's not likely to be the case if you use the CSS method. Because the CSS method relies on an external file - it has to ask the server for the "background-image", which is really just a bit of PHP to set a cookie. The problem is that when a browser loads external files like that, it doesn't stop loading the HTML, it carries on doing that at the same time as waiting for the external file. Which means that it can get to an image tag before the server has finished loading that PHP file. This is only an issue on the very first page load, and AI has smart fallbacks to deal with a no-cookie situation.</p>
+
+<h3>Troubleshooting</h3>
+<p>Most of the time people report problems it is due to one of two things:</p>
+<p><strong>If images vanish</strong>, there is something wrong with your .htaccess configuration. This happens mostly on WordPress sites - it's because the server, and wordpress, have specific requirements that are different from most servers. You'll have to play about in the .htaccess file and read up on how to use ModRewrite.</p>
+<p><strong>If you're seeing error images (big black ones)</strong> That's AI working, so your .htaccess is fine. Read the messages on the image. Most of the time you'll only see this problem because your server requires less strict permissions to write to the disc. Try setting the ai-cache directory to 775, and if all else fails use 777 - but be aware this is not very secure if you're on a shared server, and you ought to instead contact your administrator to get the server set up properly.</p>
+  </body>
+</html>
